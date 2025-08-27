@@ -6,6 +6,8 @@ pipeline {
 	        environment {
 	        MAJOR = '1'
 	        MINOR = '0'
+			UIPATH_PACKAGE = "${WORKSPACE}/Output/${BUILD_NUMBER}
+
 	        //Orchestrator Services
 	        UIPATH_ORCH_URL = "https://cloud.uipath.com/persortjnbdz"
 	        UIPATH_ORCH_TENANT_NAME = "DefaultTenant"
@@ -38,7 +40,7 @@ pipeline {
 	                UiPathPack (
 						disableBuiltInNugetFeeds: false, 
 						governanceFilePath: '', 
-						outputPath: "Output\\${env.BUILD_NUMBER}", 
+						outputPath: "Output/${env.BUILD_NUMBER}", 
 						outputType: 'Process', 
 						projectJsonPath: 'project.json', 
 						projectUrl: '', 
@@ -49,7 +51,7 @@ pipeline {
 						repositoryUrl: '', 
 						splitOutput: false, 
 						traceLevel: 'None', 
-						version: AutoVersion()
+						version: '${env.MAJOR}.${env.MINOR}.${env.BUILD_NUMBER}'
 	        )
 	            }
 	        }
@@ -69,7 +71,7 @@ pipeline {
 					ignoreLibraryDeployConflict: false, 
 					orchestratorAddress: 'https://cloud.uipath.com/persortjnbdz',
 					 orchestratorTenant: 'DefaultTenant', 
-					 packagePath: "Output\\${env.BUILD_NUMBER}", 
+					 packagePath: "${env.UIPATH_PACKAGE}/CICD_test.${env.MAJOR}.${env.MINOR}.${BUILD_NUMBER}.nupkg", 
 					 processName: 'CICD_test', 
 					 processNames: '', 
 					 traceLevel: 'None'
