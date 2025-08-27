@@ -62,7 +62,7 @@ pipeline {
 
 					UiPathDeploy (
 					createProcess: true, 
-					credentials:Token(accountName: 'Austin', credentialsId: '633cc25d-ef31-4240-aff6-86986d367266'), 
+					credentials:Token(accountName: '', credentialsId: '633cc25d-ef31-4240-aff6-86986d367266'), 
 					entryPointPaths: 'Main.xaml', 
 					environments: '', 
 					folderName: 'Test', 
