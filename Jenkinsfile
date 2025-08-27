@@ -8,7 +8,7 @@ pipeline {
     ACCOUNT_LOGICAL_NAME      = 'persortjnbdz'            // UiPath Cloud organization (account) logical name
     ORCHESTRATOR_TENANT       = 'DefaultTenant'           // UiPath tenant (or tenantLogicalName if your plugin uses that)
     ORCHESTRATOR_FOLDER       = 'Test'                    // Target folder
-    ORCHESTRATOR_BASE_URL     = 'https://cloud.uipath.com'
+    ORCHESTRATOR_BASE_URL     = 'https://cloud.uipath.com/persortjnbdz'
 
     // Output dir will be e.g. Output/123 for BUILD_NUMBER=123
     UIPATH_OUTPUT_REL         = "Output/${BUILD_NUMBER}"
@@ -83,7 +83,7 @@ pipeline {
           UiPathDeploy(
             createProcess: true,
             credentials: Token(
-              accountName: "${env.ACCOUNT_LOGICAL_NAME}",
+              accountName: "",
               credentialsId: "${env.CREDENTIALS_ID}"
             ),
 
