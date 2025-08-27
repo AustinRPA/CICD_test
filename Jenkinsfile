@@ -6,7 +6,7 @@ pipeline {
 	        environment {
 	        MAJOR = '1'
 	        MINOR = '0'
-			UIPATH_PACKAGE = "${WORKSPACE}/Output/${BUILD_NUMBER}
+			UIPATH_PACKAGE = "${WORKSPACE}/Output/${BUILD_NUMBER}"
 
 	        //Orchestrator Services
 	        UIPATH_ORCH_URL = "https://cloud.uipath.com/persortjnbdz"
@@ -51,7 +51,7 @@ pipeline {
 						repositoryUrl: '', 
 						splitOutput: false, 
 						traceLevel: 'None', 
-						version: '${env.MAJOR}.${env.MINOR}.${env.BUILD_NUMBER}'
+						version: "${env.MAJOR}.${env.MINOR}.${env.BUILD_NUMBER}"
 	        )
 	            }
 	        }
