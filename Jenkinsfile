@@ -40,7 +40,7 @@ pipeline {
 						governanceFilePath: '', 
 						outputPath: "Output\\${env.BUILD_NUMBER}", 
 						outputType: 'Process', 
-						projectJsonPath: '${WORKSPACE}', 
+						projectJsonPath: 'project.json', 
 						projectUrl: '', 
 						releaseNotes: '', 
 						repositoryBranch: '', 
