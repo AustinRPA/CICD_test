@@ -69,7 +69,7 @@ pipeline {
 					ignoreLibraryDeployConflict: false, 
 					orchestratorAddress: 'https://cloud.uipath.com/persortjnbdz',
 					 orchestratorTenant: 'DefaultTenant', 
-					 packagePath: "Output\\ ${env.BUILD_NUMBER'}", 
+					 packagePath: "Output\\${env.BUILD_NUMBER}", 
 					 processName: 'CICD_test', 
 					 processNames: '', 
 					 traceLevel: 'None'
