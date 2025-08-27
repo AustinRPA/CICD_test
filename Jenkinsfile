@@ -70,7 +70,7 @@ pipeline {
 					orchestratorAddress: 'https://cloud.uipath.com/persortjnbdz',
 					 orchestratorTenant: 'DefaultTenant', 
 					 packagePath: 'Output\\${env.BUILD_NUMBER}', 
-					 processName: 'CICD_Test', 
+					 processName: '', 
 					 processNames: '', 
 					 traceLevel: 'None'
 
