@@ -2,36 +2,33 @@ pipeline {
   agent any
 
   environment {
-    MAJOR = '1'
-    MINOR = '0'
+    // --- REQUIRED: set these to your values ---
+    PROJECT_NAME              = 'CICD_test'               // Must match project.json -> "name"
+    CREDENTIALS_ID            = '633cc25d-ef31-4240-aff6-86986d367266' // Jenkins secret id for UiPath token
+    ACCOUNT_LOGICAL_NAME      = 'persortjnbdz'            // UiPath Cloud organization (account) logical name
+    ORCHESTRATOR_TENANT       = 'DefaultTenant'           // UiPath tenant (or tenantLogicalName if your plugin uses that)
+    ORCHESTRATOR_FOLDER       = 'Test'                    // Target folder
+    ORCHESTRATOR_BASE_URL     = 'https://cloud.uipath.com'
 
-    // Keep this relative; we'll prepend WORKSPACE at use time
-    UIPATH_PACKAGE_REL = "Output/${BUILD_NUMBER}"
-
-    // Orchestrator (Cloud)
-    UIPATH_ORCH_URL_BASE = "https://cloud.uipath.com"
-    UIPATH_ORCH_TENANT = "DefaultTenant"         // or tenantLogicalName, see below
-    UIPATH_ORCH_FOLDER = "Test"
-    // Your Org (account) logical name for Cloud tokens
-    UIPATH_ACCOUNT_LOGICAL_NAME = "persortjnbdz"
+    // Output dir will be e.g. Output/123 for BUILD_NUMBER=123
+    UIPATH_OUTPUT_REL         = "Output/${BUILD_NUMBER}"
   }
 
   stages {
 
-    stage('Preparing') {
+    stage('Prepare') {
       steps {
-        echo "Jenkins Home ${env.JENKINS_HOME}"
-        echo "Jenkins URL ${env.JENKINS_URL}"
-        echo "Jenkins JOB Number ${env.BUILD_NUMBER}"
-        echo "Jenkins JOB Name ${env.JOB_NAME}"
-        echo "GitHub BranchName ${env.BRANCH_NAME}"
+        echo "Jenkins Home: ${env.JENKINS_HOME}"
+        echo "Build #: ${env.BUILD_NUMBER}"
+        echo "Job: ${env.JOB_NAME}"
+        echo "Branch: ${env.BRANCH_NAME}"
         checkout scm
       }
     }
 
-    stage('Build') {
+    stage('Pack (Auto Version)') {
       steps {
-        echo "Building..with ${env.WORKSPACE}"
+        echo "Packing project with AutoVersion into ${env.UIPATH_OUTPUT_REL}"
         UiPathPack(
           disableBuiltInNugetFeeds: false,
           governanceFilePath: '',
@@ -46,7 +43,9 @@ pipeline {
           repositoryUrl: '',
           splitOutput: false,
           traceLevel: 'None',
-          version: "${env.MAJOR}.${env.MINOR}.${env.BUILD_NUMBER}"
+
+          // IMPORTANT: Auto-generate version (SelectEntry type)
+          version: [$class: 'AutoVersionEntry']
         )
       }
     }
@@ -54,38 +53,54 @@ pipeline {
     stage('Deploy to Test') {
       steps {
         script {
-          // Build the absolute output folder path safely
-          def outDir = "${env.WORKSPACE}/${env.UIPATH_PACKAGE_REL}"
+          // Build absolute output path
+          def outDir = "${env.WORKSPACE}/${env.UIPATH_OUTPUT_REL}"
 
-          // IMPORTANT: set this to your actual project name from project.json -> "name"
-          def pkgProjectName = "CICD_test"
+          // Find the generated .nupkg file (Auto version -> unknown name suffix at author time)
+          String pkgPath
+          if (isUnix()) {
+            pkgPath = sh(
+              script: "ls -1 \"${outDir}\"/*.nupkg | head -n 1",
+              returnStdout: true
+            ).trim()
+          } else {
+            // Use PowerShell on Windows to get the first .nupkg full path
+            pkgPath = powershell(
+              returnStdout: true,
+              script: """
+                \$f = Get-ChildItem -Path '${outDir}' -Filter *.nupkg | Select-Object -First 1 -ExpandProperty FullName
+                if (-not \$f) { exit 2 } else { Write-Output \$f }
+              """
+            ).trim()
+          }
 
-          def pkgPath = "${outDir}/${pkgProjectName}.${env.MAJOR}.${env.MINOR}.${env.BUILD_NUMBER}.nupkg"
-          echo "Deploying ${env.BRANCH_NAME} using package: ${pkgPath}"
+          if (!pkgPath) {
+            error "No .nupkg found in ${outDir}. Check the Pack stage output."
+          }
 
-          // If your plugin version uses tenantLogicalName/accountLogicalName, prefer those fields.
-          // If it uses orchestratorTenant, keep that and omit tenantLogicalName.
+          echo "Deploying package: ${pkgPath}"
+
           UiPathDeploy(
             createProcess: true,
             credentials: Token(
-              accountName: "${env.UIPATH_ACCOUNT_LOGICAL_NAME}",      // <-- must not be empty
-              credentialsId: '633cc25d-ef31-4240-aff6-86986d367266'   // <-- your Jenkins secret id
+              accountName: "${env.ACCOUNT_LOGICAL_NAME}",
+              credentialsId: "${env.CREDENTIALS_ID}"
             ),
-            entryPointPaths: 'Main.xaml',
-            environments: '',
-            folderName: "${env.UIPATH_ORCH_FOLDER}",
+
+            // Use lists for multi-select fields
+            entryPointPaths: ['Main.xaml'],
+            environments: [],                  // or e.g. ['Test']
+            processNames: [],                  // keep empty unless updating specific existing processes
+
+            folderName: "${env.ORCHESTRATOR_FOLDER}",
             ignoreLibraryDeployConflict: false,
 
-            orchestratorAddress: "${env.UIPATH_ORCH_URL_BASE}",
-
-
-            orchestratorTenant: "${env.UIPATH_ORCH_TENANT}",
-
-
+            // Cloud base URL + tenant (keep this combo if your plugin expects orchestratorTenant)
+            orchestratorAddress: "${env.ORCHESTRATOR_BASE_URL}",
+            orchestratorTenant: "${env.ORCHESTRATOR_TENANT}",
 
             packagePath: pkgPath,
-            processName: "${pkgProjectName}",
-            processNames: '',
+            processName: "${env.PROJECT_NAME}",
             traceLevel: 'None'
           )
         }
