@@ -1,110 +1,110 @@
 pipeline {
-  agent any
+	    agent any
+	
 
-  environment {
-    // --- REQUIRED: set these to your values ---
-    PROJECT_NAME              = 'CICD_test'               // Must match project.json -> "name"
-    CREDENTIALS_ID            = '633cc25d-ef31-4240-aff6-86986d367266' // Jenkins secret id for UiPath token
-    ACCOUNT_LOGICAL_NAME      = 'persortjnbdz'            // UiPath Cloud organization (account) logical name
-    ORCHESTRATOR_TENANT       = 'DefaultTenant'           // UiPath tenant (or tenantLogicalName if your plugin uses that)
-    ORCHESTRATOR_FOLDER       = 'Test'                    // Target folder
-    ORCHESTRATOR_BASE_URL     = 'https://cloud.uipath.com/persortjnbdz'
+	        // Environment Variables
+	        environment {
+	        MAJOR = '1'
+	        MINOR = '0'
+			UIPATH_PACKAGE = "$env.{WORKSPACE}/Output/${BUILD_NUMBER}"
 
-    // Output dir will be e.g. Output/123 for BUILD_NUMBER=123
-    UIPATH_OUTPUT_REL         = "Output/${BUILD_NUMBER}"
-  }
+	        //Orchestrator Services
+	        UIPATH_ORCH_URL = "https://cloud.uipath.com/persortjnbdz"
+	        UIPATH_ORCH_TENANT_NAME = "DefaultTenant"
+	        UIPATH_ORCH_FOLDER_NAME = "Test"
+	    }
+	
 
-  stages {
+	    stages {
+	
 
-    stage('Prepare') {
-      steps {
-        echo "Jenkins Home: ${env.JENKINS_HOME}"
-        echo "Build #: ${env.BUILD_NUMBER}"
-        echo "Job: ${env.JOB_NAME}"
-        echo "Branch: ${env.BRANCH_NAME}"
-        checkout scm
-      }
-    }
+	        // Printing Basic Information
+	        stage('Preparing'){
+	            steps {
+	                echo "Jenkins Home ${env.JENKINS_HOME}"
+	                echo "Jenkins URL ${env.JENKINS_URL}"
+	                echo "Jenkins JOB Number ${env.BUILD_NUMBER}"
+	                echo "Jenkins JOB Name ${env.JOB_NAME}"
+	                echo "GitHub BranchName ${env.BRANCH_NAME}"
+	                checkout scm
+	
 
-    stage('Pack (Auto Version)') {
-      steps {
-        echo "Packing project with AutoVersion into ${env.UIPATH_OUTPUT_REL}"
-        UiPathPack(
-          disableBuiltInNugetFeeds: false,
-          governanceFilePath: '',
-          outputPath: "Output/${env.BUILD_NUMBER}",
-          outputType: 'Process',
-          projectJsonPath: 'project.json',
-          projectUrl: '',
-          releaseNotes: '',
-          repositoryBranch: '',
-          repositoryCommit: '',
-          repositoryType: '',
-          repositoryUrl: '',
-          splitOutput: false,
-          traceLevel: 'None',
+	            }
+	        }
+	
 
-          // IMPORTANT: Auto-generate version (SelectEntry type)
-          version: [$class: 'AutoVersionEntry']
-        )
-      }
-    }
+	         // Build Stages
+	        stage('Build') {
+	            steps {
+	                echo "Building..with ${WORKSPACE}"
+	                UiPathPack (
+						disableBuiltInNugetFeeds: false, 
+						governanceFilePath: '', 
+						outputPath: "Output/${env.BUILD_NUMBER}", 
+						outputType: 'Process', 
+						projectJsonPath: 'project.json', 
+						projectUrl: '', 
+						releaseNotes: '', 
+						repositoryBranch: '', 
+						repositoryCommit: '', 
+						repositoryType: '', 
+						repositoryUrl: '', 
+						splitOutput: false, 
+						traceLevel: 'None', 
+						version: "${env.MAJOR}.${env.MINOR}.${env.BUILD_NUMBER}"
+	        )
+	            }
+	        }
+	
 
-    stage('Deploy to Test') {
-      steps {
-        script {
-          // Build absolute output path
-          def outDir = "${env.WORKSPACE}/${env.UIPATH_OUTPUT_REL}"
+	         // Deploy Stages
+	        stage('Deploy to Test') {
+	            steps {
+	                echo "Deploying ${BRANCH_NAME} to Test "
 
-          // Find the generated .nupkg file (Auto version -> unknown name suffix at author time)
-          String pkgPath
-          if (isUnix()) {
-            pkgPath = sh(
-              script: "ls -1 \"${outDir}\"/*.nupkg | head -n 1",
-              returnStdout: true
-            ).trim()
-          } else {
-            // Use PowerShell on Windows to get the first .nupkg full path
-            pkgPath = powershell(
-              returnStdout: true,
-              script: """
-                \$f = Get-ChildItem -Path '${outDir}' -Filter *.nupkg | Select-Object -First 1 -ExpandProperty FullName
-                if (-not \$f) { exit 2 } else { Write-Output \$f }
-              """
-            ).trim()
-          }
+					UiPathDeploy (
+					createProcess: true, 
+					credentials:Token(accountName: '', credentialsId: '633cc25d-ef31-4240-aff6-86986d367266'), 
+					entryPointPaths: 'Main.xaml', 
+					environments: '', 
+					folderName: 'Test', 
+					ignoreLibraryDeployConflict: false, 
+					orchestratorAddress: 'https://cloud.uipath.com/persortjnbdz',
+					 orchestratorTenant: 'DefaultTenant', 
+					 packagePath: "${env.UIPATH_PACKAGE}/CICD_test.${env.MAJOR}.${env.MINOR}.${BUILD_NUMBER}.nupkg", 
+					 processName: 'CICD_test', 
+					 processNames: '', 
+					 traceLevel: 'None'
+                     )                    
+	            }
 
-          if (!pkgPath) {
-            error "No .nupkg found in ${outDir}. Check the Pack stage output."
-          }
+	        }
 
-          echo "Deploying package: ${pkgPath}"
+	    }
+        // Options
+	    options {
+	        // Timeout for pipeline
+	        timeout(time:80, unit:'MINUTES')
+	        skipDefaultCheckout()
+	    }
+	
 
-          UiPathDeploy(
-            createProcess: true,
-            credentials: Token(
-              accountName: "",
-              credentialsId: "${env.CREDENTIALS_ID}"
-            ),
+	
 
-            // Use lists for multi-select fields
-            entryPointPaths: ['Main.xaml'],
-            environments: [],                  // or e.g. ['Test']
-            processNames: [],                  // keep empty unless updating specific existing processes
+	    // 
+	    post {
+	        success {
+	            echo 'Deployment has been completed!'
+	        }
+	        failure {
+	          echo "FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.JOB_DISPLAY_URL})"
+	        }
+	        always {
+	            /* Clean workspace if success */
+	            cleanWs()
+	        }
+	    }
+	
+	
 
-            folderName: "${env.ORCHESTRATOR_FOLDER}",
-            ignoreLibraryDeployConflict: false,
-
-            // Cloud base URL + tenant (keep this combo if your plugin expects orchestratorTenant)
-            orchestratorAddress: "${env.ORCHESTRATOR_BASE_URL}",
-            orchestratorTenant: "${env.ORCHESTRATOR_TENANT}",
-
-            packagePath: pkgPath,
-            processName: "${env.PROJECT_NAME}",
-            traceLevel: 'None'
-          )
-        }
-      }
-    }
-  }
-}
+	}
