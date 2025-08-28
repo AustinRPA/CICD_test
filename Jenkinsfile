@@ -51,7 +51,7 @@ pipeline {
 						repositoryUrl: '', 
 						splitOutput: false, 
 						traceLevel: 'None', 
-						version: "${env.MAJOR}.${env.MINOR}.${env.BUILD_NUMBER}"
+						version: [$class: 'ManualVersionEntry', version: "${MAJOR}.${MINOR}.${env.BUILD_NUMBER}"]
 	        )
 	            }
 	        }
