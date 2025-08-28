@@ -6,10 +6,10 @@ pipeline {
 	        environment {
 	        MAJOR = '1'
 	        MINOR = '0'
-			UIPATH_PACKAGE = "$env.{WORKSPACE}/Output/${BUILD_NUMBER}"
 
 	        //Orchestrator Services
-	        UIPATH_ORCH_URL = "https://cloud.uipath.com/persortjnbdz"
+	        UIPATH_ORCH_URL = "https://cloud.uipath.com/"
+			UIPATH_ORCH_LOGICAL_NAME = "persortjnbdz"
 	        UIPATH_ORCH_TENANT_NAME = "DefaultTenant"
 	        UIPATH_ORCH_FOLDER_NAME = "Test"
 	    }
@@ -40,7 +40,7 @@ pipeline {
 	                UiPathPack (
 						disableBuiltInNugetFeeds: false, 
 						governanceFilePath: '', 
-						outputPath: "Output/${env.BUILD_NUMBER}", 
+						outputPath: "Output\\${env.BUILD_NUMBER}", 
 						outputType: 'Process', 
 						projectJsonPath: 'project.json', 
 						projectUrl: '', 
@@ -64,14 +64,14 @@ pipeline {
 
 					UiPathDeploy (
 					createProcess: true, 
-					credentials:Token(accountName: '', credentialsId: '633cc25d-ef31-4240-aff6-86986d367266'), 
+					credentials:Token(accountName: "${UIPATH_ORCH_LOGICAL_NAME}", credentialsId: '633cc25d-ef31-4240-aff6-86986d367266'), 
 					entryPointPaths: 'Main.xaml', 
 					environments: '', 
 					folderName: 'Test', 
 					ignoreLibraryDeployConflict: false, 
-					orchestratorAddress: 'https://cloud.uipath.com/persortjnbdz',
+					orchestratorAddress: 'https://cloud.uipath.com/',
 					 orchestratorTenant: 'DefaultTenant', 
-					 packagePath: "${env.UIPATH_PACKAGE}/CICD_test.${env.MAJOR}.${env.MINOR}.${BUILD_NUMBER}.nupkg", 
+					 packagePath: "Output\\${env.BUILD_NUMBER}", 
 					 processName: 'CICD_test', 
 					 processNames: '', 
 					 traceLevel: 'None'
