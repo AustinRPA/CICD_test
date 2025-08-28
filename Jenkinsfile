@@ -1,4 +1,4 @@
-pipeline {
+pipeline{
 	    agent any
 	
 
@@ -76,11 +76,15 @@ pipeline {
 					 processName: "${PROCESS_NAME}", 
 					 processNames: '', 
 					 traceLevel: 'None'
-                     )                    
-	            }
+                     )
+				}                    
+	        }
 
 			// Run In Test Stage
 			stage('Run in Test') {
+				steps{
+
+				
 				UiPathRunJob(
 
 				 credentials: Token(accountName: '${UIPATH_ORCH_LOGICAL_NAME}', 
@@ -97,15 +101,12 @@ pipeline {
 				  traceLevel: 'None',
 				  waitForJobCompletion: true
 				  )
-
-
-
-
+				}
 			}
 
 	        }
 
-	    }
+	    
         // Options
 	    options {
 	        // Timeout for pipeline
@@ -129,7 +130,8 @@ pipeline {
 	            cleanWs()
 	        }
 	    }
+}
 	
 	
 
-	}
+	
