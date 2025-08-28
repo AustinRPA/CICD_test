@@ -4,6 +4,7 @@ pipeline {
 
 	        // Environment Variables
 	        environment {
+			PROCESS_NAME ="CICD_test"
 	        MAJOR = '1'
 	        MINOR = '0'
 
@@ -57,7 +58,7 @@ pipeline {
 	        }
 	
 
-	         // Deploy Stages
+	         // Deploy Stage
 	        stage('Deploy to Test') {
 	            steps {
 	                echo "Deploying ${BRANCH_NAME} to Test "
@@ -67,16 +68,40 @@ pipeline {
 					credentials:Token(accountName: "${UIPATH_ORCH_LOGICAL_NAME}", credentialsId: '633cc25d-ef31-4240-aff6-86986d367266'), 
 					entryPointPaths: 'Main.xaml', 
 					environments: '', 
-					folderName: 'Test', 
+					folderName: "${IPATH_ORCH_FOLDER_NAMEU}", 
 					ignoreLibraryDeployConflict: false, 
-					orchestratorAddress: 'https://cloud.uipath.com/',
-					 orchestratorTenant: 'DefaultTenant', 
+					orchestratorAddress: "${UIPATH_ORCH_URL}",
+					 orchestratorTenant: "${UIPATH_ORCH_TENANT_NAME}", 
 					 packagePath: "Output\\${env.BUILD_NUMBER}", 
-					 processName: 'CICD_test', 
+					 processName: "${PROCESS_NAME}", 
 					 processNames: '', 
 					 traceLevel: 'None'
                      )                    
 	            }
+
+			// Run In Test Stage
+			stage('Run in Test') {
+				UiPathRunJob(
+
+				 credentials: Token(accountName: '${UIPATH_ORCH_LOGICAL_NAME}', 
+				 credentialsId: '633cc25d-ef31-4240-aff6-86986d367266'),
+				  failWhenJobFails: true, 
+				  folderName: "${UIPATH_ORCH_FOLDER_NAME}", 
+				  jobType: Test(), orchestratorAddress: "${UIPATH_ORCH_URL}",
+				  orchestratorTenant:"${UIPATH_ORCH_TENANT_NAME}", 
+				  parametersFilePath: '', 
+				  priority: 'Normal', 
+				  processName: "${PROCESS_NAME}", 
+				  resultFilePath: '', 
+				  strategy: Robot('Test Robot'), 
+				  traceLevel: 'None',
+				  waitForJobCompletion: true
+				  )
+
+
+
+
+			}
 
 	        }
 
