@@ -87,7 +87,7 @@ pipeline{
 				
 				UiPathRunJob(
 
-				 credentials: Token(accountName: '${UIPATH_ORCH_LOGICAL_NAME}', 
+				 credentials: Token(accountName: "${UIPATH_ORCH_LOGICAL_NAME}", 
 				 credentialsId: '633cc25d-ef31-4240-aff6-86986d367266'),
 				  failWhenJobFails: true, 
 				  folderName: "${UIPATH_ORCH_FOLDER_NAME}", 
